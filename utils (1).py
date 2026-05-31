@@ -1,7 +1,6 @@
 """
 utils.py
 Utility functions for CentSaver Streamlit Dashboard.
-Handles data loading, feature engineering (anti-leakage), and preprocessing.
 """
 
 import numpy as np
@@ -25,13 +24,9 @@ def load_data(uploaded_file):
 # 2. FEATURE ENGINEERING (Anti-Leakage)
 # ---------------------------------------------------------------------------
 def engineer_features(df):
-    """
-    Create all features needed for EDA and model inference.
-    Uses category-aware baseline to avoid leakage.
-    """
     df = df.copy()
 
-    # Temporal features
+    # Temporal
     df["month"] = df["date"].dt.month
     df["year"] = df["date"].dt.year
     df["day_of_week"] = df["date"].dt.dayofweek  # 0=Senin
@@ -40,8 +35,8 @@ def engineer_features(df):
     df["period"] = df["date"].dt.to_period("M").dt.to_timestamp()
     df["amount_log"] = np.log1p(df["amount"])
 
-    # Category-aware baseline (computed from historical data = entire uploaded set)
-    category_day_stats = (
+    # Category-aware baseline
+    cat_stats = (
         df.groupby(["category", "day_type"])
         .agg(
             cat_day_avg=("amount", "mean"),
@@ -54,10 +49,10 @@ def engineer_features(df):
         .reset_index()
     )
 
-    df = df.merge(category_day_stats, on=["category", "day_type"], how="left")
+    df = df.merge(cat_stats, on=["category", "day_type"], how="left")
     df["cat_day_std"] = df["cat_day_std"].fillna(df["amount"].std())
 
-    # Amount ratio & zscore (for EDA/microspending flag ONLY, NOT model input)
+    # Ratio & zscore (for EDA only, NOT model input)
     df["amount_ratio"] = df["amount"] / df["cat_day_avg"].replace(0, np.nan)
     df["amount_ratio"] = df["amount_ratio"].fillna(1.0)
     df["amount_zscore"] = (df["amount"] - df["cat_day_avg"]) / df["cat_day_std"].replace(0, np.nan)
@@ -69,7 +64,7 @@ def engineer_features(df):
         (df["amount"] <= df["cat_day_median"])
     ).astype(int)
 
-    # Frequency baseline per category
+    # Frequency baseline
     monthly_counts = df.groupby(["period", "category"]).size().reset_index(name="monthly_txn_count")
     freq_stats = monthly_counts.groupby("category").agg(
         monthly_txn_count_avg=("monthly_txn_count", "mean"),
@@ -77,30 +72,28 @@ def engineer_features(df):
     ).reset_index()
 
     df = df.merge(freq_stats, on="category", how="left")
-    global_freq_median = monthly_counts["monthly_txn_count"].median()
-    df["monthly_txn_count_median"] = df["monthly_txn_count_median"].fillna(global_freq_median)
+    global_med = monthly_counts["monthly_txn_count"].median()
+    df["monthly_txn_count_median"] = df["monthly_txn_count_median"].fillna(global_med)
 
     df["repetitive_category_flag"] = (
         df["monthly_txn_count_avg"] >= df["monthly_txn_count_median"]
     ).astype(int)
 
-    # Adaptive microspending label (for display/EDA)
     df["is_adaptive_microspending"] = (
         (df["small_amount_flag"] == 1) & 
         (df["repetitive_category_flag"] == 1)
     ).astype(int)
 
-    # Category encoding for model
+    # Encoding
     cat_map = {c: i+1 for i, c in enumerate(sorted(df["category"].unique()))}
     df["cat_encoded"] = df["category"].map(cat_map)
 
     return df
 
 # ---------------------------------------------------------------------------
-# 3. RFM-STYLE SEGMENTATION
+# 3. RFM
 # ---------------------------------------------------------------------------
 def compute_rfm(df):
-    """Compute user-level RFM-style segmentation."""
     user_rfm = (
         df.groupby("description")
         .agg(
@@ -115,17 +108,20 @@ def compute_rfm(df):
     )
     user_rfm["micro_rate"] = user_rfm["micro_count"] / user_rfm["frequency"]
 
-    # Monetary quartile
+    n_unique = user_rfm["frequency"].nunique()
+    labels = ["Rare", "Occasional", "Regular", "Frequent"]
+
     user_rfm["monetary_segment"] = pd.qcut(
         user_rfm["monetary"], q=4, labels=["Low", "Medium", "High", "Premium"], duplicates="drop"
     )
 
-    # Frequency quartile (handle edge cases)
-    n_unique = user_rfm["frequency"].nunique()
-    labels = ["Rare", "Occasional", "Regular", "Frequent"][:min(n_unique, 4)]
-    if n_unique >= 2:
+    if n_unique >= 4:
         user_rfm["frequency_segment"] = pd.qcut(
-            user_rfm["frequency"], q=len(labels), labels=labels, duplicates="drop"
+            user_rfm["frequency"], q=4, labels=labels, duplicates="drop"
+        )
+    elif n_unique >= 2:
+        user_rfm["frequency_segment"] = pd.qcut(
+            user_rfm["frequency"], q=n_unique, labels=labels[:n_unique], duplicates="drop"
         )
     else:
         user_rfm["frequency_segment"] = "Single-Frequency"
@@ -133,10 +129,9 @@ def compute_rfm(df):
     return user_rfm
 
 # ---------------------------------------------------------------------------
-# 4. MICROSPENDING RATIO (Quest #1)
+# 4. MICROSPENDING RATIO
 # ---------------------------------------------------------------------------
 def compute_microspending_ratio(df):
-    """Compute monthly microspending ratio per category and overall."""
     monthly_micro = (
         df.groupby(["period", "category"])
         .agg(
@@ -150,7 +145,6 @@ def compute_microspending_ratio(df):
     monthly_micro["micro_pct"] = (monthly_micro["micro_monthly"] / monthly_micro["total_monthly"] * 100).fillna(0)
     monthly_micro["micro_pct"] = monthly_micro["micro_pct"].clip(0, 100)
 
-    # Overall monthly
     overall = (
         df.groupby("period")
         .agg(
@@ -161,7 +155,6 @@ def compute_microspending_ratio(df):
     )
     overall["micro_pct"] = (overall["micro_monthly"] / overall["total_monthly"] * 100).fillna(0)
 
-    # Average per category
     avg_by_cat = (
         monthly_micro.groupby("category")
         .agg(avg_micro_pct=("micro_pct", "mean"))
@@ -172,10 +165,9 @@ def compute_microspending_ratio(df):
     return monthly_micro, overall, avg_by_cat
 
 # ---------------------------------------------------------------------------
-# 5. ANOMALY & MoM GROWTH (Quest #3)
+# 5. MoM & ANOMALY
 # ---------------------------------------------------------------------------
 def compute_mom_and_anomaly(df):
-    """Compute Month-over-Month growth and anomaly flags per category."""
     monthly_cat = (
         df.groupby(["period", "category"])
         .agg(total_amount=("amount", "sum"), txn_count=("amount", "size"))
@@ -189,13 +181,11 @@ def compute_mom_and_anomaly(df):
     ).replace([np.inf, -np.inf], 0)
     monthly_cat["mom_growth_pct"] = monthly_cat["mom_growth"] * 100
 
-    # Z-score per category
     monthly_cat["amount_zscore"] = monthly_cat.groupby("category")["total_amount"].transform(
         lambda x: (x - x.mean()) / (x.std() + 1e-9)
     )
     monthly_cat["is_anomaly"] = (monthly_cat["amount_zscore"].abs() > 2).astype(int)
 
-    # Anomaly frequency
     anomaly_freq = (
         monthly_cat.groupby("category")
         .agg(
@@ -209,10 +199,10 @@ def compute_mom_and_anomaly(df):
     anomaly_freq["anomaly_rate"] = anomaly_freq["anomaly_count"] / anomaly_freq["total_months"]
     anomaly_freq = anomaly_freq.sort_values("anomaly_rate", ascending=False)
 
-    # Weekend impulse
+    label_col = "adaptive_impulsive_label" if "adaptive_impulsive_label" in df.columns else "label"
     weekend_impulse = (
         df.groupby(["category", "is_weekend"])
-        .agg(risk_rate=("label", "mean"))
+        .agg(risk_rate=(label_col, "mean"))
         .reset_index()
         .pivot(index="category", columns="is_weekend", values="risk_rate")
         .fillna(0)
@@ -223,10 +213,9 @@ def compute_mom_and_anomaly(df):
     return monthly_cat, anomaly_freq, weekend_impulse
 
 # ---------------------------------------------------------------------------
-# 6. MODEL INPUT PREPARATION
+# 6. MODEL INPUT
 # ---------------------------------------------------------------------------
 def prepare_model_input(df):
-    """Prepare feature matrix X for model inference (anti-leakage)."""
     features = [
         "amount", "amount_log", "day_of_week", "is_weekend",
         "month", "year", "cat_encoded",
