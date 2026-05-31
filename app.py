@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, classification_report, accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, roc_curve
 from plotly.subplots import make_subplots
 
 from utils import (
