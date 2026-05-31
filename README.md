@@ -8,7 +8,7 @@ End-to-end microspending detection dashboard answering 3 Business Questions:
 2. **Q2:** Apakah model klasifikasi mampu membedakan micro-spending dengan akurasi ≥85%?
 3. **Q3:** Visualisasi mana yang paling signifikan memicu rekomendasi AI Chatbot?
 
-**Bonus:** 🤖 AI Chatbot dengan RAG (Retrieval-Augmented Generation) untuk tanya-jawab insight data.
+**Bonus:** 🤖 AI Chatbot dengan RAG (Retrieval-Augmented Generation) — 100% gratis, tanpa API.
 
 ---
 
@@ -36,7 +36,7 @@ Upload file `centsaver_master_relabelling.csv` melalui sidebar.
 ├── app.py              # Main Streamlit dashboard (6 tabs)
 ├── utils.py            # Data loading, feature engineering, RFM, microspending ratio
 ├── inference.py        # Random Forest predictor (lightweight, no TensorFlow)
-├── rag_chatbot.py      # RAG module: TF-IDF (gratis) + OpenAI (premium)
+├── rag_chatbot.py      # RAG module: TF-IDF + Template (100% gratis, no API)
 ├── requirements.txt    # Minimal Python dependencies
 └── README.md           # This file
 ```
@@ -52,23 +52,18 @@ Upload file `centsaver_master_relabelling.csv` melalui sidebar.
 | **Quest #2** | Classification performance (RF baseline), confusion matrix, ROC, feature importance |
 | **Quest #3** | MoM Growth Heatmap, anomaly detection, weekend boost, Chatbot trigger logic |
 | **RFM & Recommendations** | User segmentation, business action items, executive summary |
-| **🤖 AI Chatbot (RAG)** | Tanya-jawab insight data dengan Retrieval-Augmented Generation |
+| **🤖 AI Chatbot (RAG)** | Tanya-jawab insight data dengan RAG 100% gratis |
 
 ---
 
-## 🤖 RAG Chatbot
+## 🤖 RAG Chatbot (100% Gratis)
 
 Fitur bonus untuk tanya-jawab natural language tentang data micro-spending.
 
-### Mode Gratis (Default)
-- **TF-IDF + Cosine Similarity** untuk retrieve dokumen relevan
-- **Template-based response generation** — cepat, tidak perlu API key
-- Cukup upload data dan langsung tanya
-
-### Mode Premium (Opsional)
-- **OpenAI GPT-3.5 Turbo** untuk respons lebih natural
-- Masukkan API key di tab Chatbot
-- Memerlukan koneksi internet dan API credit
+### Teknologi
+- **TF-IDF Vectorizer** untuk embed pertanyaan dan dokumen
+- **Cosine Similarity** untuk retrieve dokumen paling relevan
+- **Template-based Response Generation** — cepat, tidak perlu API key
 
 ### Contoh Pertanyaan
 - *"Berapa rata-rata micro-spending per bulan?"*
@@ -83,7 +78,7 @@ Fitur bonus untuk tanya-jawab natural language tentang data micro-spending.
 
 - **Random Forest (Baseline):** Trained on-the-fly dengan fitur **anti-leakage** (tidak menggunakan `amount_ratio`/`amount_zscore` sebagai input model).
 - **Deep Learning:** Inference placeholder tersedia di `inference.py` jika model `.keras` sudah dilatih terpisah.
-- **RAG:** Knowledge base dibangun secara otomatis dari data yang di-upload. Tidak perlu training.
+- **RAG:** Knowledge base dibangun secara otomatis dari data yang di-upload. Tidak perlu training atau API key.
 
 ---
 
@@ -94,7 +89,7 @@ Fitur bonus untuk tanya-jawab natural language tentang data micro-spending.
 - ✅ **Interactive Plotly** visualizations (heatmap, line chart, bar chart)
 - ✅ **Real-time accumulation tracker** per kategori
 - ✅ **RFM-style segmentation** dengan action recommendations
-- ✅ **RAG Chatbot** untuk tanya-jawab insight data (gratis & premium)
+- ✅ **RAG Chatbot** untuk tanya-jawab insight data (100% gratis, no API)
 - ✅ **Model export** (joblib) untuk deployment
 
 ---

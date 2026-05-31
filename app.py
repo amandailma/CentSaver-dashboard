@@ -17,7 +17,7 @@ from utils import (
     prepare_model_input
 )
 from inference import CentSaverRF
-from rag_chatbot import generate_insight_docs, LightweightRAG, OpenAIRAG
+from rag_chatbot import generate_insight_docs, LightweightRAG
 
 # ---------------------------------------------------------------------------
 # PAGE CONFIG
@@ -464,21 +464,8 @@ with tab6:
 
     st.success(f"✅ Knowledge base siap! {len(docs)} insight documents terindex.")
 
-    # OpenAI option
-    openai_key = st.text_input("🔑 OpenAI API Key (opsional — biarkan kosong untuk pakai Lightweight RAG gratis)", type="password", help="Masukkan sk-proj-xxx untuk respons lebih natural dengan GPT-3.5")
-
-    if openai_key:
-        try:
-            openai_rag = OpenAIRAG(api_key=openai_key)
-            openai_rag.index(docs)
-            rag_mode = "openai"
-            st.info("🧠 Mode: OpenAI GPT-3.5 Turbo")
-        except Exception as e:
-            st.warning(f"OpenAI gagal: {e}. Fallback ke Lightweight RAG.")
-            rag_mode = "lightweight"
-    else:
-        rag_mode = "lightweight"
-        st.info("🧠 Mode: Lightweight RAG (TF-IDF + Template — Gratis)")
+    st.success(f"✅ Knowledge base siap! {len(docs)} insight documents terindex.")
+    st.info("🧠 Mode: Lightweight RAG (TF-IDF + Template — 100% Gratis, tanpa API)")
 
     st.divider()
 
@@ -511,10 +498,7 @@ with tab6:
 
     if st.button("🔍 Tanya AI", type="primary") and user_q:
         with st.spinner("Mencari insight relevan..."):
-            if rag_mode == "openai" and openai_key:
-                answer = openai_rag.query(user_q)
-            else:
-                answer = rag.query(user_q)
+            answer = rag.query(user_q)
 
         st.markdown("#### 📝 Jawaban:")
         st.markdown(f"{answer}")
@@ -530,11 +514,11 @@ with tab6:
 
     st.divider()
     st.markdown("""
-    **Cara kerja RAG:**
+    **Cara kerja RAG (100% Gratis):**
     1. 📊 Data transaksi diubah jadi "insight documents" (knowledge base)
     2. 🔍 Pertanyaan Anda di-embed dengan TF-IDF
     3. 📋 Sistem retrieve dokumen paling relevan (cosine similarity)
-    4. 💬 Jawaban digenerate dari context yang ditemukan
+    4. 💬 Jawaban digenerate dari context yang ditemukan menggunakan template rule-based
 
-    *Versi gratis pakai TF-IDF + template. Versi premium pakai OpenAI GPT-3.5.*
+    *Tidak menggunakan API AI eksternal. Semua proses lokal di browser.*
     """)
