@@ -1,6 +1,6 @@
 """
 app.py
-CentSaver — Streamlit Dashboard (Cloud-Optimized)
+CentSaver — Dashboard Bahasa Indonesia (Mudah Dipahami)
 Capstone DBS Foundation Coding Camp
 """
 
@@ -9,8 +9,11 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from sklearn.metrics import confusion_matrix, classification_report, accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, roc_curve
 from plotly.subplots import make_subplots
+from sklearn.metrics import (
+    confusion_matrix, classification_report, accuracy_score,
+    precision_score, recall_score, f1_score, roc_auc_score, roc_curve
+)
 
 from utils import (
     load_data, engineer_features, compute_rfm,
@@ -20,11 +23,8 @@ from utils import (
 from inference import CentSaverRF
 from rag_chatbot import generate_insight_docs, LightweightRAG
 
-# ---------------------------------------------------------------------------
-# PAGE CONFIG
-# ---------------------------------------------------------------------------
 st.set_page_config(
-    page_title="CentSaver — Microspending Intelligence",
+    page_title="CentSaver — Pantau Pengeluaran Harian",
     page_icon="💰",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -34,20 +34,20 @@ st.set_page_config(
 # SIDEBAR
 # ---------------------------------------------------------------------------
 st.sidebar.title("💰 CentSaver")
-st.sidebar.markdown("*Microspending Detection & Financial Awareness*")
+st.sidebar.markdown("*Pantau Pengeluaran Kecil-kecil Sebelum Menumpuk*")
 st.sidebar.divider()
 
 uploaded_file = st.sidebar.file_uploader(
-    "📁 Upload Dataset (CSV)", type=["csv"],
-    help="Upload centsaver_master_relabelling.csv"
+    "📁 Upload File CSV", type=["csv"],
+    help="Upload file centsaver_master_relabelling.csv"
 )
 
 st.sidebar.divider()
-st.sidebar.subheader("📊 Business Questions")
+st.sidebar.subheader("📊 3 Pertanyaan Bisnis")
 st.sidebar.markdown("""
-- **Q1:** Microspending Ratio per Bulan  
-- **Q2:** Classification ≥85%  
-- **Q3:** Visualization Trigger  
+- **Q1:** Berapa persen uang kecil-kecil yang keluar per bulan?
+- **Q2:** Apakah AI bisa bedakan transaksi wajar vs boros (≥85% akurat)?
+- **Q3:** Grafik mana yang paling cocok buat notifikasi?
 """)
 st.sidebar.divider()
 st.sidebar.info("Capstone DBS Foundation — AI Eng × Data Science")
@@ -56,36 +56,35 @@ st.sidebar.info("Capstone DBS Foundation — AI Eng × Data Science")
 # MAIN APP
 # ---------------------------------------------------------------------------
 if uploaded_file is None:
-    st.title("Welcome to CentSaver 👋")
+    st.title("Selamat Datang di CentSaver 👋")
     st.markdown("""
-    ### End-to-End Microspending Intelligence Dashboard
+    ### Aplikasi Pintar untuk Mengontrol Pengeluaran Kecil-kecil
 
-    Upload your dataset via the sidebar to begin analysis.
+    Upload file CSV Anda di sidebar untuk mulai analisis.
 
-    **Business Questions:**
-    1. How much of monthly spending is micro-spending?
-    2. Can AI distinguish micro-spending from essential needs with ≥85% accuracy?
-    3. Which visualization most effectively triggers AI Chatbot recommendations?
+    **Yang Akan Anda Temukan:**
+    1. 📊 Berapa banyak uang "kecil-kecil" yang sebenarnya besar totalnya?
+    2. 🤖 Seberapa pintar AI kita membedakan kebutuhan wajar vs boros?
+    3. 📈 Grafik seperti apa yang paling efektif buat ngingetin Anda?
     """)
     st.stop()
 
-# Load & engineer
 df_raw = load_data(uploaded_file)
 df = engineer_features(df_raw)
 X, feature_names = prepare_model_input(df)
 y = df["label"].values if "label" in df.columns else np.zeros(len(df))
 
 # ---------------------------------------------------------------------------
-# HEADER METRICS
+# HEADER
 # ---------------------------------------------------------------------------
-st.title("📊 CentSaver Dashboard")
+st.title("📊 Dashboard CentSaver")
 c1, c2, c3, c4 = st.columns(4)
-c1.metric("Total Transactions", f"{len(df):,}")
-c2.metric("Categories", f"{df['category'].nunique()}")
-c3.metric("Date Range", f"{df['date'].min().strftime('%Y-%m-%d')} → {df['date'].max().strftime('%Y-%m-%d')}")
+c1.metric("Total Transaksi", f"{len(df):,}")
+c2.metric("Jumlah Kategori", f"{df['category'].nunique()}")
+c3.metric("Rentang Waktu", f"{df['date'].min().strftime('%Y-%m-%d')} → {df['date'].max().strftime('%Y-%m-%d')}")
 if "label" in df.columns:
     micro_pct = df["label"].mean() * 100
-    c4.metric("Micro-Spending Rate", f"{micro_pct:.1f}%")
+    c4.metric("Pengeluaran Boros", f"{micro_pct:.1f}%")
 
 st.divider()
 
@@ -93,35 +92,34 @@ st.divider()
 # TABS
 # ---------------------------------------------------------------------------
 tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-    "📈 Overview & EDA",
-    "💸 Quest #1 — Microspending Ratio",
-    "🤖 Quest #2 — Classification",
-    "🔥 Quest #3 — Visualization Trigger",
-    "🎯 RFM & Recommendations",
-    "💬 AI Chatbot (RAG)"
+    "📈 Gambaran Umum",
+    "💸 Q1: Seberapa Boros?",
+    "🤖 Q2: Seberapa Pintar AI?",
+    "🔥 Q3: Grafik Paling Ampuh?",
+    "🎯 Kelompok Pengguna & Saran",
+    "💬 Tanya CentSaver AI"
 ])
 
 # ==========================================================================
-# TAB 1: OVERVIEW & EDA
+# TAB 1: OVERVIEW
 # ==========================================================================
 with tab1:
-    st.header("Overview & Exploratory Data Analysis")
+    st.header("Gambaran Umum Data Anda")
 
-    # Category stats
     cat_stats = (
         df.groupby("category")
-        .agg(txn_count=("amount", "size"), total_amount=("amount", "sum"), avg_amount=("amount", "mean"))
-        .sort_values("total_amount", ascending=False)
+        .agg(jumlah=("amount", "size"), total=("amount", "sum"), rata_rata=("amount", "mean"))
+        .sort_values("total", ascending=False)
         .reset_index()
     )
 
     c1, c2 = st.columns([2, 1])
     with c1:
         fig = px.bar(
-            cat_stats.head(10), y="category", x="total_amount", orientation="h",
-            color="total_amount", color_continuous_scale="Blues",
-            title="Top 10 Categories by Total Spending",
-            labels={"total_amount": "Total Amount (Rp)", "category": ""}
+            cat_stats.head(10), y="category", x="total", orientation="h",
+            color="total", color_continuous_scale="Blues",
+            title="10 Kategori Pengeluaran Terbesar",
+            labels={"total": "Total (Rp)", "category": ""}
         )
         fig.update_layout(height=400)
         st.plotly_chart(fig, use_container_width=True)
@@ -129,123 +127,119 @@ with tab1:
     with c2:
         st.dataframe(cat_stats.head(10).round(0), use_container_width=True, hide_index=True)
 
-    st.info("**Insight:** *Makanan & Minuman* dominates total spending. *Sewa & Cicilan* has highest average per transaction but lowest frequency — a 'bulk payment' pattern. Threshold must be category-aware.")
+    st.info("📊 **Insight:** *Makanan & Minuman* memang jadi pengeluaran terbesar — karena kita makan tiap hari. Tapi hati-hati, kategori *Sewa & Cicilan* meski jarang, nominalnya gede banget. Makanya, batas 'boros' nggak bisa sama untuk semua kategori. Belanja Rp100rb untuk sewa beda artinya dengan Rp100rb untuk kopi.")
 
-    # Temporal
-    st.subheader("Temporal & Behavioral Analysis")
+    st.subheader("Pola Waktu & Perilaku")
     monthly_top = df.groupby(["period", "category"])["amount"].sum().reset_index()
     top8 = cat_stats.head(8)["category"].tolist()
     monthly_top = monthly_top[monthly_top["category"].isin(top8)]
 
     fig = px.line(
         monthly_top, x="period", y="amount", color="category",
-        title="Monthly Spending Trend — Top 8 Categories",
-        labels={"amount": "Total Amount (Rp)", "period": "Month"}
+        title="Tren Bulanan — 8 Kategori Teratas",
+        labels={"amount": "Total (Rp)", "period": "Bulan"}
     )
     fig.update_layout(height=450)
     st.plotly_chart(fig, use_container_width=True)
 
-    # Weekend
     weekend_df = (
         df.groupby(["category", "day_type"])
-        .agg(avg_amount=("amount", "mean"))
+        .agg(rata_rata=("amount", "mean"))
         .reset_index()
-        .pivot(index="category", columns="day_type", values="avg_amount")
+        .pivot(index="category", columns="day_type", values="rata_rata")
         .fillna(0)
         .reset_index()
     )
-    weekend_df["weekend_boost"] = weekend_df.get("weekend", 0) - weekend_df.get("weekday", 0)
-    weekend_df = weekend_df.sort_values("weekend_boost", ascending=True)
+    weekend_df["selisih_weekend"] = weekend_df.get("weekend", 0) - weekend_df.get("weekday", 0)
+    weekend_df = weekend_df.sort_values("selisih_weekend", ascending=True)
 
     fig = px.bar(
-        weekend_df, y="category", x="weekend_boost", orientation="h",
-        color="weekend_boost", color_continuous_scale="RdBu",
-        title="Weekend Impulse Boost (Weekend − Weekday Average)",
-        labels={"weekend_boost": "Amount Difference (Rp)", "category": ""}
+        weekend_df, y="category", x="selisih_weekend", orientation="h",
+        color="selisih_weekend", color_continuous_scale="RdBu",
+        title="Selisih Pengeluaran: Akhir Pekan vs Hari Kerja",
+        labels={"selisih_weekend": "Selisih (Rp)", "category": ""}
     )
     fig.update_layout(height=400)
     st.plotly_chart(fig, use_container_width=True)
 
-    st.info("**Insight:** *Elektronik*, *Hobi & Olahraga*, and *Perjalanan* show positive weekend boost (>Rp50k) — impulsive/hedonistic behavior. *Transportasi* and *Kopi & Minuman* are lower on weekends (commuter spending).")
+    st.info("🛍️ **Insight:** Akhir pekan itu musimnya 'godaan'! Pengeluaran untuk *Hobi, Elektronik, dan Perjalanan* naik drastis saat Sabtu-Minggu. Sebaliknya, *Transportasi* dan *Kopi* justru turun — karena hari kerja lah yang butuh kopi dan ongkos. Tips: waspadai 'weekend impulse' Anda!")
 
 # ==========================================================================
-# TAB 2: QUEST #1 — MICROSPENDING RATIO
+# TAB 2: QUEST #1
 # ==========================================================================
 with tab2:
-    st.header("Quest #1: Microspending Ratio Analysis (Category-Aware)")
+    st.header("Q1: Seberapa Banyak Uang Kecil-kecil yang Keluar?")
 
     monthly_micro, overall_monthly, avg_micro_by_cat = compute_microspending_ratio(df)
     THRESHOLD = 20
     flagged = avg_micro_by_cat[avg_micro_by_cat["avg_micro_pct"] > THRESHOLD]["category"].tolist()
 
-    # KPI
     k1, k2, k3 = st.columns(3)
-    k1.metric("Overall Avg / Month", f"{overall_monthly['micro_pct'].mean():.2f}%", "< 20% threshold")
-    k2.metric("Flagged Categories", f"{len(flagged)}", ", ".join(flagged) if len(flagged) <= 2 else f"{', '.join(flagged[:2])}...")
-    k3.metric("Highest Risk", f"{avg_micro_by_cat.iloc[0]['category']}", f"{avg_micro_by_cat.iloc[0]['avg_micro_pct']:.1f}%")
+    k1.metric("Rata-rata per Bulan", f"{overall_monthly['micro_pct'].mean():.2f}%", "< batas 20%")
+    k2.metric("Kategori Waspada", f"{len(flagged)}", ", ".join(flagged) if len(flagged) <= 2 else f"{', '.join(flagged[:2])}...")
+    k3.metric("Paling Boros", f"{avg_micro_by_cat.iloc[0]['category']}", f"{avg_micro_by_cat.iloc[0]['avg_micro_pct']:.1f}%")
 
     st.divider()
 
     c1, c2 = st.columns(2)
     with c1:
-        st.markdown("**A. Overall Monthly Trend**")
+        st.markdown("**A. Tren Bulanan**")
         fig = go.Figure()
         fig.add_trace(go.Scatter(
             x=overall_monthly["period"], y=overall_monthly["micro_pct"],
             mode="lines+markers", line=dict(color="navy", width=2),
             fill="tozeroy", fillcolor="rgba(173,216,230,0.3)"
         ))
-        fig.add_hline(y=THRESHOLD, line_dash="dash", line_color="red", annotation_text=f"Threshold {THRESHOLD}%")
-        fig.update_layout(height=350, xaxis_title="Period", yaxis_title="Microspending %")
+        fig.add_hline(y=THRESHOLD, line_dash="dash", line_color="red", annotation_text=f"Batas Waspada {THRESHOLD}%")
+        fig.update_layout(height=350, xaxis_title="Bulan", yaxis_title="Persen Micro-spending")
         st.plotly_chart(fig, use_container_width=True)
 
     with c2:
-        st.markdown("**B. Average Ratio per Category**")
+        st.markdown("**B. Rata-rata per Kategori**")
         top10 = avg_micro_by_cat.head(10).copy()
-        top10["color"] = top10["category"].apply(lambda x: "Flagged" if x in flagged else "Normal")
+        top10["warna"] = top10["category"].apply(lambda x: "Waspada" if x in flagged else "Aman")
         fig = px.bar(
             top10, y="category", x="avg_micro_pct", orientation="h",
-            color="color", color_discrete_map={"Flagged": "crimson", "Normal": "steelblue"},
-            title="Top 10 Categories"
+            color="warna", color_discrete_map={"Waspada": "crimson", "Aman": "steelblue"},
+            title="10 Kategori Teratas"
         )
         fig.add_vline(x=THRESHOLD, line_dash="dash", line_color="red")
         fig.update_layout(height=350, showlegend=True)
         st.plotly_chart(fig, use_container_width=True)
 
-    # Accumulation Tracker
-    st.subheader("💡 Microspending Accumulation Tracker")
-    selected_cat = st.selectbox("Select Category to Track", options=df["category"].unique(), key="tracker")
+    st.subheader("💡 Pelacak Akumulasi Pengeluaran")
+    selected_cat = st.selectbox("Pilih Kategori untuk Dipantau", options=df["category"].unique(), key="tracker")
     cat_df = df[df["category"] == selected_cat].copy()
-    cat_df["running_micro"] = (cat_df["is_adaptive_microspending"] * cat_df["amount"]).cumsum()
-    cat_df["running_total"] = cat_df["amount"].cumsum()
-    cat_df["running_pct"] = (cat_df["running_micro"] / cat_df["running_total"] * 100).fillna(0)
+    cat_df["akumulasi_boros"] = (cat_df["is_adaptive_microspending"] * cat_df["amount"]).cumsum()
+    cat_df["akumulasi_total"] = cat_df["amount"].cumsum()
+    cat_df["persen_boros"] = (cat_df["akumulasi_boros"] / cat_df["akumulasi_total"] * 100).fillna(0)
 
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=cat_df["date"], y=cat_df["running_pct"], mode="lines", name="Running %", line=dict(color="coral")))
-    fig.add_hline(y=THRESHOLD, line_dash="dash", line_color="red", annotation_text="Alert Threshold")
-    fig.update_layout(title=f"Accumulation Tracker: {selected_cat}", xaxis_title="Date", yaxis_title="Cumulative Microspending %", height=350)
+    fig.add_trace(go.Scatter(x=cat_df["date"], y=cat_df["persen_boros"], mode="lines", name="Persen Boros", line=dict(color="coral")))
+    fig.add_hline(y=THRESHOLD, line_dash="dash", line_color="red", annotation_text="Batas Peringatan")
+    fig.update_layout(title=f"Pelacakan: {selected_cat}", xaxis_title="Tanggal", yaxis_title="Persen Akumulasi Boros", height=350)
     st.plotly_chart(fig, use_container_width=True)
 
-    st.info(f"**Insight:** Categories **{', '.join(flagged)}** exceed the 20% tolerance threshold. *Hobi & Olahraga* at **42.59%** is a primary leakage bucket — users perceive these as 'secondary needs' but they drain nearly half of daily cash flow.")
+    st.info(f"⚠️ **Insight:** Kategori **{', '.join(flagged)}** ini perlu diwaspadai! *Hobi & Olahraga* mencapai **42,59%** — artinya hampir setengah uang harian Anda lari ke sini. Padahal sering dianggap 'kebutuhan wajar'. Padahal kalau dijumlahkan, bisa buat tabungan lho.")
 
 # ==========================================================================
-# TAB 3: QUEST #2 — CLASSIFICATION
+# TAB 3: QUEST #2
 # ==========================================================================
 with tab3:
-    st.header("Quest #2: Classification Performance (Anti-Leakage)")
+    st.header("Q2: Seberapa Pintar AI Membedakan Transaksi?")
 
-    with st.spinner("Training Random Forest baseline..."):
+    with st.spinner("Sedang melatih model AI..."):
         rf = CentSaverRF()
         rf.fit(X, y)
 
     m = rf.metrics
     TARGET = 0.85
-    status = "✅ LULUS" if m["accuracy"] >= TARGET else "⚠️ BELUM CAPAI TARGET"
+    status = "✅ LULUS" if m["accuracy"] >= TARGET else "⚠️ PERLU PERBAIKAN"
 
     m1, m2, m3, m4, m5 = st.columns(5)
-    m1.metric("Accuracy", f"{m['accuracy']:.2%}", status)
-    m2.metric("Precision", f"{m['precision']:.2%}")
-    m3.metric("Recall", f"{m['recall']:.2%}")
+    m1.metric("Akurasi", f"{m['accuracy']:.2%}", status)
+    m2.metric("Ketepatan", f"{m['precision']:.2%}")
+    m3.metric("Ingatan", f"{m['recall']:.2%}")
     m4.metric("F1-Score", f"{m['f1']:.2%}")
     m5.metric("AUC", f"{m['auc']:.3f}")
 
@@ -253,54 +247,51 @@ with tab3:
 
     c1, c2 = st.columns(2)
     with c1:
-        st.markdown("**A. Confusion Matrix**")
+        st.markdown("**A. Matriks Kebingungan**")
         cm = confusion_matrix(m["y_test"], m["y_pred"])
         fig = px.imshow(
             cm, text_auto=True, color_continuous_scale="Blues",
-            labels=dict(x="Predicted", y="Actual", color="Count"),
-            x=["Normal", "Micro"], y=["Normal", "Micro"]
+            labels=dict(x="Prediksi", y="Asli", color="Jumlah"),
+            x=["Wajar", "Boros"], y=["Wajar", "Boros"]
         )
         fig.update_layout(height=350)
         st.plotly_chart(fig, use_container_width=True)
 
     with c2:
-        st.markdown("**B. ROC Curve**")
+        st.markdown("**B. Kurva ROC**")
         fpr, tpr, _ = roc_curve(m["y_test"], m["y_prob"])
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=fpr, y=tpr, mode="lines", name=f"RF (AUC={m['auc']:.3f})", line=dict(color="steelblue", width=3)))
-        fig.add_trace(go.Scatter(x=[0, 1], y=[0, 1], mode="lines", name="Random Guess", line=dict(dash="dash", color="black")))
+        fig.add_trace(go.Scatter(x=[0, 1], y=[0, 1], mode="lines", name="Tebakan Acak", line=dict(dash="dash", color="black")))
         fig.update_layout(height=350, xaxis_title="False Positive Rate", yaxis_title="True Positive Rate")
         st.plotly_chart(fig, use_container_width=True)
 
-    # Feature importance
-    st.subheader("**C. Feature Importance (Top 10)**")
+    st.subheader("**C. Fitur Paling Berpengaruh**")
     imp = rf.feature_importances(feature_names)
-    imp_df = pd.DataFrame(imp, columns=["feature", "importance"]).sort_values("importance", ascending=True).tail(10)
-    fig = px.bar(imp_df, y="feature", x="importance", orientation="h", color="importance", color_continuous_scale="Greens")
-    fig.update_layout(height=400, yaxis_title="", xaxis_title="Importance")
+    imp_df = pd.DataFrame(imp, columns=["fitur", "pengaruh"]).sort_values("pengaruh", ascending=True).tail(10)
+    fig = px.bar(imp_df, y="fitur", x="pengaruh", orientation="h", color="pengaruh", color_continuous_scale="Greens")
+    fig.update_layout(height=400, yaxis_title="", xaxis_title="Tingkat Pengaruh")
     st.plotly_chart(fig, use_container_width=True)
 
-    with st.expander("📄 Classification Report"):
-        from sklearn.metrics import classification_report
-        st.text(classification_report(m["y_test"], m["y_pred"], target_names=["Normal", "Micro"], zero_division=0))
+    with st.expander("📄 Laporan Klasifikasi Lengkap"):
+        st.text(classification_report(m["y_test"], m["y_pred"], target_names=["Wajar", "Boros"], zero_division=0))
 
-    st.info(f"**Insight:** DS Baseline (Random Forest, anti-leakage) achieves **{m['accuracy']:.2%}** accuracy and **AUC {m['auc']:.3f}**, validating that behavioral features are strong enough without label leakage. Top features: `amount`, `amount_log`, `day_of_week`.")
+    st.info(f"🤖 **Insight:** Model AI kita berhasil dengan akurasi **{m['accuracy']:.2%}** dan skor AUC **{m['auc']:.3f}**. Artinya, aplikasi ini cukup pintar membedakan transaksi wajar vs boros. Yang paling berpengaruh: besar nominal, pola hari (weekend), dan jenis kategori.")
 
-    st.subheader("💾 Export Model")
-    if st.button("Save RF Baseline Model"):
+    st.subheader("💾 Simpan Model")
+    if st.button("Simpan Model RF"):
         rf.save("centsaver")
-        st.success("Model saved! Download from repo or local folder.")
+        st.success("Model tersimpan! Bisa diunduh dari repo atau folder lokal.")
 
 # ==========================================================================
-# TAB 4: QUEST #3 — VISUALIZATION TRIGGER
+# TAB 4: QUEST #3
 # ==========================================================================
 with tab4:
-    st.header("Quest #3: Visualization Trigger for AI Chatbot")
+    st.header("Q3: Grafik Seperti Apa yang Paling Ampuh?")
 
     monthly_cat, anomaly_freq, weekend_impulse = compute_mom_and_anomaly(df)
 
-    # Hero: MoM Heatmap
-    st.subheader("🥇 HERO: Month-over-Month Growth Heatmap")
+    st.subheader("🥇 JUARA: Heatmap Pertumbuhan Bulan-ke-Bulan")
     top10_cats = anomaly_freq.head(10)["category"].tolist()
     heatmap_data = monthly_cat[monthly_cat["category"].isin(top10_cats)].copy()
     heatmap_data["period_str"] = heatmap_data["period"].dt.strftime("%Y-%m")
@@ -310,170 +301,159 @@ with tab4:
 
     fig = px.imshow(
         pivot_growth, color_continuous_scale="RdYlGn_r", aspect="auto",
-        labels=dict(x="Month", y="Category", color="MoM Growth %"),
-        title="Top 10 Spike Categories (Last 24 Months)"
+        labels=dict(x="Bulan", y="Kategori", color="Pertumbuhan %"),
+        title="10 Kategori Paling 'Nge-trend' (24 Bulan Terakhir)"
     )
     fig.update_layout(height=500)
     st.plotly_chart(fig, use_container_width=True)
 
-    # Trigger info
     max_val = pivot_growth.stack().max()
     max_cell = pivot_growth.stack().idxmax()
-    st.info(f"🔥 **Chatbot Trigger:** `{max_cell[0]}` spiked **{max_val:.1f}%** in `{max_cell[1]}`. Recommend: *'Lonjakan {max_val:.0f}% di {max_cell[0]} — pertimbangkan tunda pembelian.'*")
+    st.info(f"🔥 **Contoh Notifikasi Chatbot:** *Wah, kategori {max_cell[0]} melonjak {max_val:.1f}% di bulan {max_cell[1]}! Mau saya bantu cari tips hemat?*")
 
     st.divider()
 
     c1, c2 = st.columns(2)
     with c1:
-        st.markdown("**🥈 SUPPORTING: Anomaly Rate per Category**")
+        st.markdown("**🥈 PENDUKUNG: Seberapa Sering Kategori Ini 'Nge-trend'?**")
         top8 = anomaly_freq.head(8).copy()
-        top8["color"] = top8["anomaly_rate"].apply(
-            lambda r: "High" if r > 0.15 else "Medium" if r > 0.08 else "Low"
+        top8["level"] = top8["anomaly_rate"].apply(
+            lambda r: "Tinggi" if r > 0.15 else "Sedang" if r > 0.08 else "Rendah"
         )
         fig = px.bar(
             top8, y="category", x="anomaly_rate", orientation="h",
-            color="color", color_discrete_map={"High": "crimson", "Medium": "orange", "Low": "steelblue"},
-            title="Proportion of Anomalous Months"
+            color="level", color_discrete_map={"Tinggi": "crimson", "Sedang": "orange", "Rendah": "steelblue"},
+            title="Seberapa Sering Kategori Ini Tidak Menentu"
         )
         fig.update_layout(height=350, showlegend=True)
         st.plotly_chart(fig, use_container_width=True)
 
     with c2:
-        st.markdown("**🥉 CONTEXT: Weekend Impulse Boost**")
+        st.markdown("**🥉 KONTEKS: Akhir Pekan vs Hari Kerja**")
         fig = px.bar(
             weekend_impulse.reset_index(), y="category", x="weekend_boost",
             orientation="h", color="weekend_boost", color_continuous_scale="Teal",
-            title="Risk Rate Difference (Weekend − Weekday)"
+            title="Selisih Risiko: Akhir Pekan − Hari Kerja"
         )
         fig.update_layout(height=350)
         st.plotly_chart(fig, use_container_width=True)
 
-    # Time series + anomaly
-    st.subheader("📈 Time Series + Anomaly Highlight")
+    st.subheader("📈 Contoh Grafik + Penanda Anomali")
     most_volatile = anomaly_freq.iloc[0]["category"]
     cat_ts = monthly_cat[monthly_cat["category"] == most_volatile].sort_values("period")
 
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=cat_ts["period"], y=cat_ts["total_amount"], mode="lines", name="Total Spending", line=dict(color="navy", width=2)))
+    fig.add_trace(go.Scatter(x=cat_ts["period"], y=cat_ts["total_amount"], mode="lines", name="Total Pengeluaran", line=dict(color="navy", width=2)))
     anomaly_pts = cat_ts[cat_ts["is_anomaly"] == 1]
     if not anomaly_pts.empty:
         fig.add_trace(go.Scatter(
             x=anomaly_pts["period"], y=anomaly_pts["total_amount"],
-            mode="markers", name="Anomaly (Z>2)", marker=dict(color="red", size=12, symbol="x")
+            mode="markers", name="Anomali (Z>2)", marker=dict(color="red", size=12, symbol="x")
         ))
-    fig.update_layout(title=f"Most Volatile Category: {most_volatile}", xaxis_title="Period", yaxis_title="Total Amount (Rp)", height=400)
+    fig.update_layout(title=f"Kategori Paling Tidak Menentu: {most_volatile}", xaxis_title="Bulan", yaxis_title="Total (Rp)", height=400)
     st.plotly_chart(fig, use_container_width=True)
 
     st.info("""
-    **Dashboard Priority:**
-    1. **HERO** — Heatmap MoM Growth (korelasi 0.71 dengan risk rate) → Trigger: *"Lonjakan X% di [Kategori]"*
-    2. **SUPPORTING** — Line Chart + Anomaly Marker → Trigger: *"Pola tidak normal terdeteksi"*
-    3. **SECONDARY** — Bar Chart Anomaly Rate → Trigger: *"Kategori ini volatile"*
-    4. **CONTEXT** — Weekend vs Weekday → Trigger: *"Weekend boost terdeteksi"*
+    📋 **Prioritas Tampilan Dashboard:**
+    1. **UTAMA** — Heatmap MoM Growth (korelasi 0.71 dengan risk rate) → Trigger: *"Lonjakan X% di [Kategori]"*
+    2. **PENDUKUNG** — Line Chart + Anomaly Marker → Trigger: *"Pola tidak normal terdeteksi"*
+    3. **SEKUNDER** — Bar Chart Anomaly Rate → Trigger: *"Kategori ini tidak menentu"*
+    4. **KONTEKS** — Weekend vs Weekday → Trigger: *"Akhir pekan rawan boros"*
     """)
 
 # ==========================================================================
 # TAB 5: RFM & RECOMMENDATIONS
 # ==========================================================================
 with tab5:
-    st.header("RFM-Style Segmentation & Business Recommendations")
+    st.header("Kelompok Pengguna & Saran Praktis")
 
     user_rfm = compute_rfm(df)
 
     c1, c2 = st.columns(2)
     with c1:
-        st.markdown("**A. User Count per Segment**")
+        st.markdown("**A. Jumlah Pengguna per Kelompok**")
         segment_crosstab = pd.crosstab(user_rfm["frequency_segment"], user_rfm["monetary_segment"])
         fig = px.imshow(segment_crosstab, text_auto=True, color_continuous_scale="YlOrRd", aspect="auto")
         fig.update_layout(height=350)
         st.plotly_chart(fig, use_container_width=True)
 
     with c2:
-        st.markdown("**B. Microspending Rate per Segment**")
+        st.markdown("**B. Tingkat Boros per Kelompok**")
         segment_micro = (
             user_rfm.groupby(["frequency_segment", "monetary_segment"])
-            .agg(avg_micro_rate=("micro_rate", "mean"))
+            .agg(rata_boros=("micro_rate", "mean"))
             .reset_index()
-            .pivot(index="frequency_segment", columns="monetary_segment", values="avg_micro_rate")
+            .pivot(index="frequency_segment", columns="monetary_segment", values="rata_boros")
         )
         fig = px.imshow(segment_micro, text_auto=".2f", color_continuous_scale="RdYlGn_r", aspect="auto")
         fig.update_layout(height=350)
         st.plotly_chart(fig, use_container_width=True)
 
-    st.subheader("🎯 Segment Profiles & Actions")
+    st.subheader("🎯 Profil 3 Kelompok Pengguna")
     seg1, seg2, seg3 = st.columns(3)
 
     with seg1:
-        st.error("**Occasional-Medium**")
-        st.metric("Micro-Rate", "~35%", "HIGHEST RISK")
+        st.error("**Jarang-Menetap**")
+        st.metric("Tingkat Boros", "~35%", "RISIKO TERTINGGI")
         st.markdown("""
-        *Hidden risk segment* — low frequency, no habit anchor.  
-        **Action:** 🎮 *Micro-Spending Challenge*  
-        Convert difference vs median into auto-savings.
+        Orang yang jarang transaksi, tapi kalau transaksi suka impulsif.  
+        **Saran:** 🎮 Ikut *Tantangan Kurangi Boros* — selisihkan uang yang hemat ke tabungan otomatis.
         """)
 
     with seg2:
-        st.success("**Frequent-Premium**")
-        st.metric("Micro-Rate", "Lowest", "DEFENSIVE ASSET")
+        st.success("**Sering-Premium**")
+        st.metric("Tingkat Boros", "Paling Rendah", "ASSET PENTING")
         st.markdown("""
-        *Planned spender* — high frequency, disciplined budget.  
-        **Action:** 🏆 *Loyalty Reward*  
-        Exclusive insights + retention benefits.
+        Orang yang sering belanja tapi justru paling hemat dan teratur.  
+        **Saran:** 🏆 Beri *Reward Loyalitas* — biar tetap setia pakai aplikasi.
         """)
 
     with seg3:
-        st.warning("**One-Time Spender**")
-        st.metric("Window", "7 Days", "INTERVENTION")
+        st.warning("**Pemula**")
+        st.metric("Jendela Intervensi", "7 Hari", "SEGERA")
         st.markdown("""
-        *Cold start* — first transaction behavior crystallizes fast.  
-        **Action:** 📨 *Follow-up 7 Hari*  
-        "Was this purchase planned? Check your pattern."
+        Pengguna baru — kebiasaan pertama bakal menentukan pola ke depan.  
+        **Saran:** 📨 Kirim *follow-up 7 hari* — "Apakah belanjaan kemarin sudah direncanakan?"
         """)
 
     st.divider()
 
-    st.subheader("📋 Executive Summary & Verdict")
+    st.subheader("📋 Ringkasan Eksekutif")
     st.markdown("""
-    | Quest | Status | Evidence |
-    |-------|--------|----------|
-    | **Q1** Microspending Ratio | ✅ LULUS | Category-aware baseline valid; 2 kategori flagged |
-    | **Q2** Classification ≥85% | ✅ LULUS | RF Baseline: >91% / AUC >0.97 |
-    | **Q3** Visualization Trigger | ✅ LULUS | MoM Heatmap korelasi 0.71; layout terstruktur |
-    | **RFM** Segmentasi | ✅ LULUS | 4 segmen actionable dengan intervensi spesifik |
+    | Pertanyaan | Status | Bukti |
+    |------------|--------|-------|
+    | **Q1** Berapa persen micro-spending? | ✅ LULUS | Baseline per kategori valid; 2 kategori perlu diwaspadai |
+    | **Q2** Apakah AI akurat ≥85%? | ✅ LULUS | Model RF: **{:.2%}** / AUC: **{:.3f}** — melebihi target! |
+    | **Q3** Visualisasi terbaik? | ✅ LULUS | Heatmap MoM Growth paling ampuh (korelasi 0.71) |
+    | **RFM** Segmentasi pengguna? | ✅ LULUS | 3 kelompok pengguna dengan saran masing-masing |
 
-    **Next Step:** Deploy ke FastAPI + jalankan A/B Testing RF vs DL untuk mengukur *business impact* nyata (pengurangan micro-spending pasca-alert), bukan hanya akurasi teknis.
-    """)
+    **Langkah Selanjutnya:** Integrasi ke FastAPI & jalankan A/B Testing untuk ukur dampak nyata — berapa banyak pengguna yang berhasil hemat setelah pakai aplikasi ini.
+    """.format(m['accuracy'], m['auc']))
 
 # ==========================================================================
 # TAB 6: AI CHATBOT (RAG)
 # ==========================================================================
 with tab6:
-    st.header("🤖 AI Chatbot — Retrieval-Augmented Generation")
-    st.markdown("*Tanya apa saja tentang data micro-spending Anda. Sistem akan mencari insight relevan dari data untuk menjawab.*")
+    st.header("💬 Tanya CentSaver AI")
+    st.markdown("*Tanya apa saja tentang data pengeluaran Anda. Sistem akan mencari insight paling relevan untuk menjawab.*")
 
     st.divider()
 
-    # Prepare RAG
-    with st.spinner("Membangun knowledge base dari data..."):
+    with st.spinner("Sedang membangun basis pengetahuan..."):
         monthly_micro_rag, overall_monthly_rag, avg_micro_by_cat_rag = compute_microspending_ratio(df)
         _, anomaly_freq_rag, weekend_impulse_rag = compute_mom_and_anomaly(df)
         docs = generate_insight_docs(df, monthly_micro_rag, overall_monthly_rag, avg_micro_by_cat_rag, anomaly_freq_rag, weekend_impulse_rag)
 
-        # Initialize RAG
         rag = LightweightRAG()
         rag.index(docs)
 
-    st.success(f"✅ Knowledge base siap! {len(docs)} insight documents terindex.")
-
-    st.success(f"✅ Knowledge base siap! {len(docs)} insight documents terindex.")
-    st.info("🧠 Mode: Lightweight RAG (TF-IDF + Template — 100% Gratis, tanpa API)")
+    st.success(f"✅ Basis pengetahuan siap! {len(docs)} dokumen insight sudah terindex.")
+    st.info("🧠 Mode: RINGAN & GRATIS (TF-IDF + Template — tanpa API AI eksternal)")
 
     st.divider()
 
-    # Chat interface
-    st.subheader("💬 Tanya CentSaver AI")
+    st.subheader("💬 Tanya Apa Saja")
 
-    # Suggested questions
     suggestions = [
         "Berapa rata-rata micro-spending per bulan?",
         "Kategori apa yang paling boros?",
@@ -498,28 +478,27 @@ with tab6:
     user_q = st.text_input("Atau ketik pertanyaan Anda:", value=selected_q if selected_q else "", placeholder="Contoh: Kenapa saya boros bulan ini?")
 
     if st.button("🔍 Tanya AI", type="primary") and user_q:
-        with st.spinner("Mencari insight relevan..."):
+        with st.spinner("Sedang mencari jawaban..."):
             answer = rag.query(user_q)
 
         st.markdown("#### 📝 Jawaban:")
         st.markdown(f"{answer}")
 
-        # Show retrieved context (expandable)
-        with st.expander("📄 Lihat context data yang digunakan"):
+        with st.expander("📄 Lihat data yang digunakan untuk menjawab"):
             q_vec = rag.vectorizer.transform([user_q])
             scores = cosine_similarity(q_vec, rag.doc_vectors).flatten()
             top_idx = scores.argsort()[-3:][::-1]
             for i, idx in enumerate(top_idx, 1):
-                st.markdown(f"**Doc {i} (score: {scores[idx]:.3f}):**")
+                st.markdown(f"**Dokumen {i} (skor relevansi: {scores[idx]:.3f}):**")
                 st.text(rag.docs[idx][:500] + "...")
 
     st.divider()
     st.markdown("""
-    **Cara kerja RAG (100% Gratis):**
-    1. 📊 Data transaksi diubah jadi "insight documents" (knowledge base)
-    2. 🔍 Pertanyaan Anda di-embed dengan TF-IDF
-    3. 📋 Sistem retrieve dokumen paling relevan (cosine similarity)
-    4. 💬 Jawaban digenerate dari context yang ditemukan menggunakan template rule-based
+    **Cara Kerja Chatbot (100% Gratis):**
+    1. 📊 Data transaksi Anda diubah jadi "buku panduan" digital
+    2. 🔍 Pertanyaan Anda dicocokkan dengan isi buku panduan
+    3. 📋 Sistem ambil halaman paling relevan
+    4. 💬 Jawaban disusun dari halaman tersebut — tanpa pakai AI eksternal
 
-    *Tidak menggunakan API AI eksternal. Semua proses lokal di browser.*
+    *Semua proses di server Streamlit, tidak perlu API key, tidak perlu internet khusus.*
     """)
