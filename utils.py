@@ -115,16 +115,23 @@ def compute_rfm(df):
         user_rfm["monetary"], q=4, labels=["Low", "Medium", "High", "Premium"], duplicates="drop"
     )
 
-    if n_unique >= 4:
-        user_rfm["frequency_segment"] = pd.qcut(
-            user_rfm["frequency"], q=4, labels=labels, duplicates="drop"
+    # Handle edge case: qcut fails when too few unique values
+    try:
+        if n_unique >= 4:
+            user_rfm["frequency_segment"] = pd.qcut(
+                user_rfm["frequency"], q=4, labels=labels, duplicates="drop"
+            )
+        elif n_unique >= 2:
+            user_rfm["frequency_segment"] = pd.qcut(
+                user_rfm["frequency"], q=n_unique, labels=labels[:n_unique], duplicates="drop"
+            )
+        else:
+            user_rfm["frequency_segment"] = "Single-Frequency"
+    except ValueError:
+        # Fallback: use cut with fixed bins
+        user_rfm["frequency_segment"] = pd.cut(
+            user_rfm["frequency"], bins=min(4, n_unique), labels=labels[:min(4, n_unique)], duplicates="drop"
         )
-    elif n_unique >= 2:
-        user_rfm["frequency_segment"] = pd.qcut(
-            user_rfm["frequency"], q=n_unique, labels=labels[:n_unique], duplicates="drop"
-        )
-    else:
-        user_rfm["frequency_segment"] = "Single-Frequency"
 
     return user_rfm
 
